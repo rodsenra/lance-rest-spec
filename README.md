@@ -633,11 +633,85 @@ that some extra meta data about the collection per se (`ordersProcessed`, `order
 }
 ```
 
-## Convention 4: Root URL and API Metadata
+## Convention 4: Root URL and API Metadata (mandatory)
+
+In order to provide a full self-discoverable experience for clients, Lance-REST relies on an API
+entry point called Root URL. This Root URL yields a Lance-REST document with metadata about the
+API per se.
+
+It is recommended that this endpoint be the root (`/`) of your API. The following example shows an
+API with two endpoints:
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/" },
+    "contacts": { "href": "/contacts" },
+    "contact": { "href": "/contact/{uuid}" }
+  },
+  "_meta": {
+    "class": "Metadata"
+  },
+  "version": "1.0",
+  "serverName": "Snakebar"
+}
+```
+
+Things to obseve:
+
+* This is a simple Lance-REST document. Therefore, every Lance-REST convention applies
+* We've used an optional `class` called `Metadata` to make clients easier to implement
+* A `contacts` link points to `/contacts` so clients know to go there in order to fetch contacts
+* In order to get one specific contact, clients must check the `contact` link template (`/contact/{uuid}`)
+  and fill the `uuid` parameter accordingly (see [URI Templating](#uri-templating) below)
+* The payload also carries other relevant data about the server (`version` and `serverName`). The
+  API designer is free to carry any relevant payload
+
+*The Root URL is mandatory for Lance-REST*
+
+*A parseable collection of links documenting each endpoint of the API is also mandatory*
+
+In other words, your Lance-REST *MUST* respond on its Root URL with a Lance-REST document containing
+all API endpoints.
+
+TODO: convention for which endpoints accept POST, PUT and DELETE
+
+### URI Templating
+
+The templating used on the metadata response follow the standard below:
+
+1) `{parameter}`: represents a mandatory placeholder named `parameter`. Clients MUST replace this
+   placeholder when composing a full URL
+2) `{?parameter}`: represents an optional placeholder named `parameter`. Clients MAY replace this
+   placeholder with a parameter, but, if the parameter is not available, the client MUST remove the
+   placeholder altogether.
+
+The following template has one mandatory (`type`) and one optional (`pageSize`) parameters:
+
+`/orders?type={type}&pageSize={?pageSize}`
+
+Clients MUST replace `{type}` when composing this URL. Therefore, if a client wants only `open`
+orders and does not care about the optional `pageSize`, the following URL would be composed:
+
+`/orders?type=open&pageSize=`
+
+In a subsquent call (or a different client) may want to fetch `processed` orders and have 25 orders
+per page:
+
+`/orders?type=closed&pageSize=25`
+
+Of course, API designers can play around any URL formating strategy and design they see fit. Lance-REST
+servers and clients simply follow this simple placeholder replacement logic.
 
 ## Convention 5: POST and PUT responses
 
-### URI Templating
+In Lance-REST both `POST` and `PUT` operations always yield a basic Lance-REST representation of the
+resource being added (`POST`) or changed (`PUT`).
+
+It is also recommended that `Content-Type` of the requests carry `application/lance+json` and that
+the responses are `201` for a successful `POST` and `200` for a successful `PUT`.
+
+TODO: describe this in more details (how is the client able to infer what to do and where)
 
 
  [1]: http://work.co/
