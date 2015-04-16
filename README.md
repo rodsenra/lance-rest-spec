@@ -63,6 +63,8 @@ Lance-REST. Things to look for:
 * The URI of the main resource being represented (`/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1`) 
   expressed with a `self` link
 * A class definition that describes this resource as a `Contact` (at `_meta/class`)
+* Think of this representation as a simple JSON describing a contact named `Miles Davis` with
+  email `miles.davis@gmail.com`
 
 ### application/lance+json document
 ```javascript
@@ -84,7 +86,7 @@ Lance-REST. Things to look for:
 The example below is how you might represent a simple collection of contacts with
 Lance-REST. Things to look for:
 
-* Equally to a single contact, certain attributes also start with `_` (underscore)
+* Similarly to a single contact, certain attributes also start with `_` (underscore)
 * The URI of the collection being represented (`/contacts`) expressed with a `self` link
 * The URI for the next page (`/contacts?page=2`) expressed with a `next` link
 * A class definition that describes this resource as a `ContactCollection` (at `_meta/class`)
@@ -92,6 +94,9 @@ Lance-REST. Things to look for:
 * Each entity of the collection representing its own resource according to Lance-REST conventions
 * Extended meta-descriptors that describe the collection in more detail (`totalCount`, `currentPage` 
   and `pageCount`)
+* Think of this representation as a collection of contacts (specifically page 1 of a collection
+  containing a total of 6 contacts). We also see the two contacts on this page and know how to
+  fetch more contacts as well as more details of each contact if needed.
 
 ### application/lance+json document
 ```javascript
@@ -136,18 +141,17 @@ Lance-REST. Things to look for:
 
 ### Relationships (advanced example)
 
-The example below is how you might represent a simple collection of contacts with
-Lance-REST. Things to look for:
+The example below is how you might represent an advanced product model with
+Lance-REST. The product in question has embedded models in itself (the product category and
+a collection of tags). Things to look for:
 
-TODO: this section
-* Equally to a single contact, certain attributes also start with `_` (underscore)
-* The URI of the collection being represented (`/contacts`) expressed with a `self` link
-* The URI for the next page (`/contacts?page=2`) expressed with a `next` link
-* A class definition that describes this resource as a `ContactCollection` (at `_meta/class`)
-* An indicator of the node where the collection resides (`contactList`)
+* Similarly to a single contact (example above), certain attributes start with `_` (underscore)
+* The URI of the product being represented (`/product/5abb57d4-e3c6-11e4-8a00-1681e6b88ec1`)
+* The URI of the product category being represented (`/category/ee8263cc-e3c6-11e4-8a00-1681e6b88ec1`)
+* The URI of the product's collection of tags (`/product/5abb57d4-e3c6-11e4-8a00-1681e6b88ec1/tags`)
+* A class definitions describing each resource `Product`, `ProductCategory`, `ProductTagCollection`, and `ProductTag` (at `_meta/class`)
+* An indicator of the node where the tag collection resides (`tagList`)
 * Each entity of the collection representing its own resource according to Lance-REST conventions
-* Extended meta-descriptors that describe the collection in more detail (`totalCount`, `currentPage` 
-  and `pageCount`)
 
 ### application/lance+json document
 ```javascript
@@ -196,24 +200,30 @@ TODO: this section
   }
 ```
 
-## The Underscore Attributes
+## Convention 1: Underscore and Non-Underscore Attributes
 
-## Convention Underscore Attributes (_links and _meta)
+## Convention 2: _links node (optional)
 
-## Root URL
+### The _links/self node (optional)
 
-## _links/self
+### The _links/prev and _links/next node (mandatory for paged collections)
 
-## _links/prev and _links/next
+### Other _links nodes
 
-## _meta/class
+## Convention 3: _meta node (optional)
 
-## _meta/collectionNode
+### The _meta/class node (recommended)
 
-## _meta/currentPage _meta/totalCount _meta/pageCount
+### The _meta/collectionNode node (mandatory for collections)
 
+### The _meta/currentPage, _meta/totalCount and _meta/pageCount nodes (mandatory for paged collections)
 
-## Links
+### Other _meta nodes
+
+## Convention 4: Root URL and API Metadata
+
+## Convention 5: POST and PUT responses
+
 
  [1]: http://work.co/
  [2]: http://martinfowler.com/articles/richardsonMaturityModel.html
