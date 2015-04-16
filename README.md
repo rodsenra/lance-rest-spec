@@ -401,21 +401,243 @@ can be fetched.
 
 ### Other _links nodes
 
+Other nodes within `_links` are to be used for named relationships of the entity in question. Let's
+return to our contact example. This time around the API design is such that the contact's friends
+is linked on a name connection (`friends`) for the contact being represented. A Lance-REST enabled
+client must implement a support to fetch the URL specified by the `_links/friends/href`. The
+key difference between this design and the one we saw before is that the friends' collection is
+linked to the current contact; the previous example had the friends' collection embedded in
+the current contact.
+
+By enabling this kind of design flexibility, Lance-REST servers and clients can self-negotiate the
+best strategy to consume the entities and their relationships.
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" },
+    "friends" { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1/friends" }
+  },
+  "_meta": {
+    "class": "Contact"
+  },
+  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
+
 ## Convention 3: _meta node (optional)
+
+The `_meta` node is where API designers can add payload the describe the resource being represented
+in detail.
 
 ### The _meta/class node (recommended)
 
+Despite not being mandatory, the `_meta/class` node is highly recommended as it allows clients to
+dynamically react based on the content type of the resource being described.
+
+Take our traditional contact example. The following would be a totally valid Lance-REST document:
+
+```javascript
+{
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
+
+However, clients (humans or machines) are not able to easily identify which kind of resource this
+instance refers to. It could be a person, a contact, or even a robot :)
+
+Therefore, the following representation instructs clients/readers that the entity is, indeed,
+a `Contact`:
+
+```javascript
+{
+  "_meta": {
+    "class": "Contact"
+  },
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
+
+Within the design of your API, classes should be used to identify unique resource types. In practice,
+this means that each class name is unique.
+
 ### The _meta/collectionNode node (mandatory for collections)
+
+In Lance-REST, collections receive special treatement. A Lance-REST enabled collection has the
+same meta-descriptor wrappers as any other object. In addition, it also has a `_meta/collectionNode`
+entry that instructs clients to the location of the collection proper.
+
+Suppose you want to model a collection of contacts, you could go about doing the following:
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contacts" }
+  },
+  "_meta": {
+    "class": "ContactCollection",
+    "collectionNode": "contactList"
+  },
+  "contactList": [
+    {
+      "_links": {
+        "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Contact"
+      },
+      "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+      "name": "Miles Davis",
+      "email": "miles.davis@gmail.com"
+    },
+    {
+      "_links": {
+        "self": { "href": "/contact/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Contact"
+      },
+      "_id": "fdb7a214-e3c4-11e4-8a00-1681e6b88ec1",
+      "name": "John Coltrane",
+      "email": "john.coltrane@gmail.com"
+    }
+  ]
+}
+```
+
+Some observations about this design:
+
+* Despite being optional, a `class` has been defined. This helps clients wrap this response in a
+  model if they want to.
+* `collectionNode` points to node `contactList` and instructs clients to find the collection items
+  over there.
+* This collection is not paginated (there's no `next` or `prev` nodes within `_links` as well as no
+  `currentPage`, `totalCount` and `pageCount` nodes in `_meta` - see below).
 
 ### The _meta/currentPage, _meta/totalCount and _meta/pageCount nodes (mandatory for paged collections)
 
+As described above about `_links/prev` and `_links/next`, collections can be paginated.
+Lance-REST takes an opinionated approach to pagination. In order to expose the pagination details
+to Lance-REST clients, the following nodes are *mandatory* if either `_links/prev` or `_links/next`
+are present:
+
+1) `currentPage`: the number of the page the document refers to (1-based - meaning 1st page is 1)
+2) `totalCount`: the total number of entries this collection has
+3) `pageCount`: the total number of pages this collection has
+
+The following example is a paged collection of contacts with a total of 6 contacts, this document
+shows page 1 of this collection and there are 3 pages in total:
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contacts" },
+    "next": { "href": "/contacts?page=2" }
+  },
+  "_meta": {
+    "class": "ContactCollection",
+    "collectionNode": "contactList",
+    "totalCount": 6,
+    "currentPage": 1,
+    "pageCount": 3
+  },
+  "contactList": [
+    {
+      "_links": {
+        "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Contact"
+      },
+      "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+      "name": "Miles Davis",
+      "email": "miles.davis@gmail.com"
+    },
+    {
+      "_links": {
+        "self": { "href": "/contact/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Contact"
+      },
+      "_id": "fdb7a214-e3c4-11e4-8a00-1681e6b88ec1",
+      "name": "John Coltrane",
+      "email": "john.coltrane@gmail.com"
+    }
+  ]
+}
+```
+
 ### Other _meta nodes
+
+Other nodes can be added to `_meta` but they are not needed for Lance-REST purposes. Uses of these
+are normally related to extra information about the resource at hand that may be relevante to the
+client but is not usually created or updated by the client.
+
+The follow example shows a collection of contacts where the API designer decided to tell the clients
+that some extra meta data about the collection per se (`ordersProcessed`, `ordersUnderReview` and
+`ordersPending`):
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/orders" },
+    "next": { "href": "/orders?page=2" }
+  },
+  "_meta": {
+    "class": "OrderCollection",
+    "collectionNode": "orderList",
+    "totalCount": 26,
+    "currentPage": 1,
+    "pageCount": 9,
+    "ordersProcessed": 13,
+    "ordersUnderReview": 5,
+    "ordersPending": 8
+  },
+  "orderList": [
+    {
+      "_links": {
+        "self": { "href": "/order/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Order"
+      },
+      "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+      "total": 452.12
+    },
+    {
+      "_links": {
+        "self": { "href": "/order/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Order"
+      },
+      "_id": "fdb7a214-e3c4-11e4-8a00-1681e6b88ec1",
+      "total": 645.55
+    },
+    {
+      "_links": {
+        "self": { "href": "/order/618f076e-e488-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Order"
+      },
+      "_id": "618f076e-e488-11e4-8a00-1681e6b88ec1",
+      "total": 321.23
+    }
+  ]
+}
+```
 
 ## Convention 4: Root URL and API Metadata
 
 ## Convention 5: POST and PUT responses
 
-## Templating the URIs
+### URI Templating
 
 
  [1]: http://work.co/
