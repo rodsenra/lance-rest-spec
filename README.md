@@ -200,7 +200,80 @@ a collection of tags). Things to look for:
   }
 ```
 
-## Convention 1: Underscore and Non-Underscore Attributes
+## Convention 1: Root URL and API Metadata (mandatory)
+
+In order to provide a full self-discoverable experience for clients, Lance-REST relies on an API
+entry point called Root URL. This Root URL yields a Lance-REST document with metadata about the
+API per se.
+
+This endpoint MUST be the root (`/`) of your API. The following example shows an
+API with two available endpoints:
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/" },
+    "contacts": { "href": "/contacts" },
+    "contact": { "href": "/contact/{uuid}" }
+  },
+  "_meta": {
+    "class": "Metadata"
+  },
+  "version": "1.0",
+  "serverName": "Snakebar"
+}
+```
+
+Things to obseve:
+
+* This is a simple Lance-REST document. Therefore, every Lance-REST convention applies
+* We've used an optional `class` called `Metadata` to make clients easier to implement
+* A `contacts` link points to `/contacts` so clients know to go there in order to fetch contacts
+* In order to get one specific contact, clients must check the `contact` link template (`/contact/{uuid}`)
+  and fill the `uuid` parameter accordingly (see [URI Templating](#uri-templating) below)
+* The payload also carries other relevant data about the server (`version` and `serverName`). The
+  API designer is free to carry any relevant payload
+
+*The Root URL is mandatory for Lance-REST*
+
+*A parseable collection of links documenting each endpoint of the API is also mandatory*
+
+In other words, your Lance-REST *MUST* respond on its Root URL with a Lance-REST document containing
+all API endpoints.
+
+In Lance-REST, every endpoint must support the `GET` method. Additionally, endpoints can support
+also `POST`, `PUT`, and `DELETE`. Read more about how Lance-REST clients and servers should deal
+with these methods on [Convention 5](#convention-5-_post_-put-and-delete-responses).
+
+### URI Templating
+
+The templating used on the metadata response follow the standard below:
+
+1) `{parameter}`: represents a mandatory placeholder named `parameter`. Clients MUST replace this
+   placeholder when composing a full URL
+2) `{?parameter}`: represents an optional placeholder named `parameter`. Clients MAY replace this
+   placeholder with a parameter, but, if the parameter is not available, the client MUST remove the
+   placeholder altogether.
+
+The following template has one mandatory (`type`) and one optional (`pageSize`) parameters:
+
+`/orders?type={type}&pageSize={?pageSize}`
+
+Clients MUST replace `{type}` when composing this URL. Therefore, if a client wants only `open`
+orders and does not care about the optional `pageSize`, the following URL would be composed:
+
+`/orders?type=open&pageSize=`
+
+In a subsquent call (or a different client) may want to fetch `processed` orders and have 25 orders
+per page:
+
+`/orders?type=closed&pageSize=25`
+
+Of course, API designers can play around any URL formating strategy and design they see fit. Lance-REST
+servers and clients simply follow this simple placeholder replacement logic.
+
+
+## Convention 2: Underscore and Non-Underscore Attributes
 
 Lance-REST uses simple JSON documents. It is recommended that the `Content-Type` and `Accept` headers
 used point to `application/lance+json` for clarity sake.
@@ -244,188 +317,6 @@ a Lance-REST specific need but it is here to represent the possibilities. Any un
 (such as `_id`) would be considered part of the meta representation of this instance. Refer to
 [Convention 5](#convention-5-post-and-put-responses) for more information about the implications
 of such architecture.
-
-## Convention 2: _links node (optional)
-
-A `_links` node represents all or some of the relationships this specific resource has with other
-entities. The absence of a `_links` node would indicate to clients that there are no further
-relationships that can be inferred.
-
-Lance-REST follows a basic convention for meta-functionality but Lance-REST servers are allowed
-(and should feel free to) add as many business-specifc links as needed for the purposes of the
-API being designed.
-
-### The _links/self node (optional)
-
-The `self` node points to the very URI where clients can fetch a more complete representation of
-the resource in question. I.e. let's assume the client has already fetched a simple instance of
-a contact such as the one below. This may have been a simple entry on a larger collection or
-an embedded reference on another larger resource.
-
-```javascript
-{
-  "_links": {
-    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
-  },
-  "_meta": {
-    "class": "Contact"
-  },
-  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
-  "name": "Miles Davis",
-  "email": "miles.davis@gmail.com"
-}
-```
-
-Now let's suppose the client wants to know more about Miles Davis. Since the `_links/self/href` is
-available, the client will follow it and the following representation could be used to represent
-the "fuller", more complete version of this entity:
-
-```javascript
-{
-  "_links": {
-    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
-  },
-  "_meta": {
-    "class": "Contact"
-  },
-  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
-  "name": "Miles Davis",
-  "email": "miles.davis@gmail.com",
-  "phone": "+1 555 4321 6677",
-  "country": {
-    "_meta": {
-      "class": "Country"
-    }
-    "code": "US",
-    "name": "United States of America"
-  },
-  "friends": {
-    "meta": {
-      "class": "ContactCollection",
-      "collectionNode": "friendList"
-    },
-    "friendList": [
-      {
-        "_links": {
-          "self": { "href": "/contact/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
-        },
-        "_meta": {
-          "class": "Contact"
-        },
-        "_id": "fdb7a214-e3c4-11e4-8a00-1681e6b88ec1",
-        "name": "John Coltrane",
-        "email": "john.coltrane@gmail.com"
-      },
-      {
-        "_links": {
-          "self": { "href": "/contact/f75c07d6-e449-11e4-8a00-1681e6b88ec1" }
-        },
-        "_meta": {
-          "class": "Contact"
-        },
-        "_id": "f75c07d6-e449-11e4-8a00-1681e6b88ec1",
-        "name": "Dizzy Gillespie",
-        "email": "dizzy.gillespie@gmail.com"
-      }
-    ]
-  }
-}
-```
-
-This representation is way more complete than the simpler one the client had before. It carries one
-more simple attribute (`phone`) but also a Lance-REST empowered relationship to a `Country` resource
-(`Country`, as represented here, doesn't have a fuller representation of itself - no `_links/self`
-node is provided) and a relationship to a list of friends (Lance-REST empowered `friends` ndode).
-
-The `friends` node points to a collection of `Contact` entities which, in turn, could be fetched
-by the client on their own respective `_links/self` URIs.
-
-### The _links/prev and _links/next node (mandatory for paged collections)
-
-There are two other nodes that may go into the `_links` node: `prev` and `next`. These are used
-by Lance-REST clients to go through paged collections. The `_links/next` points to the URI where the
-next page can be fetched and the `_links/prev` points to the URI where the previous page can be
-fetched.
-
-If present, these nodes may be used by clients wishing to get more results. If a previous page is not
-available, then the `prev` node must not to be presented. Similarly, if a next page is not available
-then the `next` node must not be present.
-
-The following example shows a possible representation of a paged collection of contacts:
-
-```javascript
-{
-  "_links": {
-    "self": { "href": "/contacts" },
-    "next": { "href": "/contacts?page=2" }
-  },
-  "_meta": {
-    "class": "ContactCollection",
-    "collectionNode": "contactList",
-    "totalCount": 6,
-    "currentPage": 1,
-    "pageCount": 3
-  },
-  "contactList": [
-    {
-      "_links": {
-        "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
-      },
-      "_meta": {
-        "class": "Contact"
-      },
-      "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
-      "name": "Miles Davis",
-      "email": "miles.davis@gmail.com"
-    },
-    {
-      "_links": {
-        "self": { "href": "/contact/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
-      },
-      "_meta": {
-        "class": "Contact"
-      },
-      "_id": "fdb7a214-e3c4-11e4-8a00-1681e6b88ec1",
-      "name": "John Coltrane",
-      "email": "john.coltrane@gmail.com"
-    }
-  ]
-}
-```
-
-Please note that there are some other conventions for collections (such as `collectionNode`,
-`totalCount`, `currentPage` and `pageCount`). These are explained in more details on
-[Convention 3](#convention-3-_meta-node-optional). The `next` link on the above example points
-to `/contacts?page=2` where the second page for this collection (of 3 pages, as one can see)
-can be fetched.
-
-### Other _links nodes
-
-Other nodes within `_links` are to be used for named relationships of the entity in question. Let's
-return to our contact example. This time around the API design is such that the contact's friends
-is linked on a name connection (`friends`) for the contact being represented. A Lance-REST enabled
-client must implement a support to fetch the URL specified by the `_links/friends/href`. The
-key difference between this design and the one we saw before is that the friends' collection is
-linked to the current contact; the previous example had the friends' collection embedded in
-the current contact.
-
-By enabling this kind of design flexibility, Lance-REST servers and clients can self-negotiate the
-best strategy to consume the entities and their relationships.
-
-```javascript
-{
-  "_links": {
-    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" },
-    "friends" { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1/friends" }
-  },
-  "_meta": {
-    "class": "Contact"
-  },
-  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
-  "name": "Miles Davis",
-  "email": "miles.davis@gmail.com"
-}
-```
 
 ## Convention 3: _meta node (optional)
 
@@ -633,85 +524,335 @@ that some extra meta data about the collection per se (`ordersProcessed`, `order
 }
 ```
 
-## Convention 4: Root URL and API Metadata (mandatory)
+## Convention 4: _links node (optional)
 
-In order to provide a full self-discoverable experience for clients, Lance-REST relies on an API
-entry point called Root URL. This Root URL yields a Lance-REST document with metadata about the
-API per se.
+A `_links` node represents all or some of the relationships this specific resource has with other
+entities. The absence of a `_links` node would indicate to clients that there are no further
+relationships that can be inferred.
 
-It is recommended that this endpoint be the root (`/`) of your API. The following example shows an
-API with two endpoints:
+Lance-REST follows a basic convention for meta-functionality but Lance-REST servers are allowed
+(and should feel free to) add as many business-specifc links as needed for the purposes of the
+API being designed.
+
+### The _links/self node (optional)
+
+The `self` node points to the very URI where clients can fetch a more complete representation of
+the resource in question. I.e. let's assume the client has already fetched a simple instance of
+a contact such as the one below. This may have been a simple entry on a larger collection or
+an embedded reference on another larger resource.
 
 ```javascript
 {
   "_links": {
-    "self": { "href": "/" },
-    "contacts": { "href": "/contacts" },
-    "contact": { "href": "/contact/{uuid}" }
+    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
   },
   "_meta": {
-    "class": "Metadata"
+    "class": "Contact"
   },
-  "version": "1.0",
-  "serverName": "Snakebar"
+  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com"
 }
 ```
 
-Things to obseve:
+Now let's suppose the client wants to know more about Miles Davis. Since the `_links/self/href` is
+available, the client will follow it and the following representation could be used to represent
+the "fuller", more complete version of this entity:
 
-* This is a simple Lance-REST document. Therefore, every Lance-REST convention applies
-* We've used an optional `class` called `Metadata` to make clients easier to implement
-* A `contacts` link points to `/contacts` so clients know to go there in order to fetch contacts
-* In order to get one specific contact, clients must check the `contact` link template (`/contact/{uuid}`)
-  and fill the `uuid` parameter accordingly (see [URI Templating](#uri-templating) below)
-* The payload also carries other relevant data about the server (`version` and `serverName`). The
-  API designer is free to carry any relevant payload
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+  },
+  "_meta": {
+    "class": "Contact"
+  },
+  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com",
+  "phone": "+1 555 4321 6677",
+  "country": {
+    "_meta": {
+      "class": "Country"
+    }
+    "code": "US",
+    "name": "United States of America"
+  },
+  "friends": {
+    "meta": {
+      "class": "ContactCollection",
+      "collectionNode": "friendList"
+    },
+    "friendList": [
+      {
+        "_links": {
+          "self": { "href": "/contact/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
+        },
+        "_meta": {
+          "class": "Contact"
+        },
+        "_id": "fdb7a214-e3c4-11e4-8a00-1681e6b88ec1",
+        "name": "John Coltrane",
+        "email": "john.coltrane@gmail.com"
+      },
+      {
+        "_links": {
+          "self": { "href": "/contact/f75c07d6-e449-11e4-8a00-1681e6b88ec1" }
+        },
+        "_meta": {
+          "class": "Contact"
+        },
+        "_id": "f75c07d6-e449-11e4-8a00-1681e6b88ec1",
+        "name": "Dizzy Gillespie",
+        "email": "dizzy.gillespie@gmail.com"
+      }
+    ]
+  }
+}
+```
 
-*The Root URL is mandatory for Lance-REST*
+This representation is way more complete than the simpler one the client had before. It carries one
+more simple attribute (`phone`) but also a Lance-REST empowered relationship to a `Country` resource
+(`Country`, as represented here, doesn't have a fuller representation of itself - no `_links/self`
+node is provided) and a relationship to a list of friends (Lance-REST empowered `friends` ndode).
 
-*A parseable collection of links documenting each endpoint of the API is also mandatory*
+The `friends` node points to a collection of `Contact` entities which, in turn, could be fetched
+by the client on their own respective `_links/self` URIs.
 
-In other words, your Lance-REST *MUST* respond on its Root URL with a Lance-REST document containing
-all API endpoints.
+### The _links/prev and _links/next node (mandatory for paged collections)
 
-TODO: convention for which endpoints accept POST, PUT and DELETE
+There are two other nodes that may go into the `_links` node: `prev` and `next`. These are used
+by Lance-REST clients to go through paged collections. The `_links/next` points to the URI where the
+next page can be fetched and the `_links/prev` points to the URI where the previous page can be
+fetched.
 
-### URI Templating
+If present, these nodes may be used by clients wishing to get more results. If a previous page is not
+available, then the `prev` node must not to be presented. Similarly, if a next page is not available
+then the `next` node must not be present.
 
-The templating used on the metadata response follow the standard below:
+The following example shows a possible representation of a paged collection of contacts:
 
-1) `{parameter}`: represents a mandatory placeholder named `parameter`. Clients MUST replace this
-   placeholder when composing a full URL
-2) `{?parameter}`: represents an optional placeholder named `parameter`. Clients MAY replace this
-   placeholder with a parameter, but, if the parameter is not available, the client MUST remove the
-   placeholder altogether.
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contacts" },
+    "next": { "href": "/contacts?page=2" }
+  },
+  "_meta": {
+    "class": "ContactCollection",
+    "collectionNode": "contactList",
+    "totalCount": 6,
+    "currentPage": 1,
+    "pageCount": 3
+  },
+  "contactList": [
+    {
+      "_links": {
+        "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Contact"
+      },
+      "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+      "name": "Miles Davis",
+      "email": "miles.davis@gmail.com"
+    },
+    {
+      "_links": {
+        "self": { "href": "/contact/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
+      },
+      "_meta": {
+        "class": "Contact"
+      },
+      "_id": "fdb7a214-e3c4-11e4-8a00-1681e6b88ec1",
+      "name": "John Coltrane",
+      "email": "john.coltrane@gmail.com"
+    }
+  ]
+}
+```
 
-The following template has one mandatory (`type`) and one optional (`pageSize`) parameters:
+Please note that there are some other conventions for collections (such as `collectionNode`,
+`totalCount`, `currentPage` and `pageCount`). These are explained in more details on
+[Convention 3](#convention-3-_meta-node-optional). The `next` link on the above example points
+to `/contacts?page=2` where the second page for this collection (of 3 pages, as one can see)
+can be fetched.
 
-`/orders?type={type}&pageSize={?pageSize}`
+### Other _links nodes
 
-Clients MUST replace `{type}` when composing this URL. Therefore, if a client wants only `open`
-orders and does not care about the optional `pageSize`, the following URL would be composed:
+Other nodes within `_links` are to be used for named relationships of the entity in question. Let's
+return to our contact example. This time around the API design is such that the contact's friends
+is linked on a name connection (`friends`) for the contact being represented. A Lance-REST enabled
+client must implement a support to fetch the URL specified by the `_links/friends/href`. The
+key difference between this design and the one we saw before is that the friends' collection is
+linked to the current contact; the previous example had the friends' collection embedded in
+the current contact.
 
-`/orders?type=open&pageSize=`
+By enabling this kind of design flexibility, Lance-REST servers and clients can self-negotiate the
+best strategy to consume the entities and their relationships.
 
-In a subsquent call (or a different client) may want to fetch `processed` orders and have 25 orders
-per page:
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" },
+    "friends" { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1/friends" }
+  },
+  "_meta": {
+    "class": "Contact"
+  },
+  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
 
-`/orders?type=closed&pageSize=25`
 
-Of course, API designers can play around any URL formating strategy and design they see fit. Lance-REST
-servers and clients simply follow this simple placeholder replacement logic.
+## Convention 5: POST, PUT and DELETE responses
 
-## Convention 5: POST and PUT responses
+In Lance-REST, every endpoint must support the `GET` method. Lance-REST clients are expected to
+alwyas use `GET` when fetching resources.
 
-In Lance-REST both `POST` and `PUT` operations always yield a basic Lance-REST representation of the
-resource being added (`POST`) or changed (`PUT`).
+Clients are also expected to have facilities for creating, updating and deleting resources.
 
-It is also recommended that `Content-Type` of the requests carry `application/lance+json` and that
-the responses are `201` for a successful `POST` and `200` for a successful `PUT`.
+### Update logic (PUT)
 
-TODO: describe this in more details (how is the client able to infer what to do and where)
+The following logic is used by Lance-REST clients when updating a resource:
+
+1) The client must first `GET` the resource's instance and therefore discover its `self` link.
+2) A resource without a `self` link cannot be updated
+3) With the `self` link in hands, the client MAY then send the updated Lance-REST document back to the
+   `self` link using the `PUT` method
+4) If the transaction was successful, the server MUST respond with a `200` and the updated
+   representation of the resource in Lance-REST format
+5) If the transaction was not successful, the server MUST respond with the proper HTTP status code
+6) The three traditional and most common responses for failed `PUT` requests are `406 Not Acceptable`
+   (something was not acceptable on the request - i.e. some data is invalid), `409 Conflict` (there
+   is a conflict on the server reguarding this resource - i.e. someone else updated it before) and
+   `410 Gone` (the representation of this resource does not exist on the server anymore)
+7) The failed requests should also carry the latest representation of the resource on their bodies
+   in Lance-REST format
+
+Lance-REST enabled clients and server SHOULD use HTTP status code to convey proper status in
+addition to the conventions listed above.
+
+### Deleting logic (DELETE)
+
+The following logic is used by Lance-REST clients when deleting a resource:
+
+1) The client must first `GET` the resource's instance and therefore discover its `self` link.
+2) A resource without a `self` link cannot be deleted
+3) With the `self` link in hands, the client MAY then send a `DELETE` request to the  `self` link
+4) If the transaction was successful, the server MUST respond with a `200`
+5) If the transaction was not successful, the server MUST respond with the proper HTTP status code
+6) The two traditional and most common responses for failed `DELETE` requests are `409 Conflict` (there
+   is a conflict on the server reguarding this resource - i.e. someone else updated it before) and
+   `410 Gone` (the representation of this resource does not exist on the server anymore)
+
+Lance-REST enabled clients and server SHOULD use HTTP status code to convey proper status in
+addition to the conventions listed above.
+
+### Creating logic (POST)
+
+Clients may try to `POST` on any of the available link offered by the Root URL API. However, it's
+recommended that only links related to collections support this method for clarity sake.
+
+1) The client must first be aware of the links available by the API metadata Root URL (i.e. a
+   `contacts` link that points to `/contacts`)
+2) The client MAY then send a completely new resource in Lance-REST document back to the
+   `contacts` link using the `POST` method
+3) If the transaction was successful, the server MUST respond with a `201 Created` and the created
+   representation of the resource in Lance-REST format
+4) If the transaction was not successful, the server MUST respond with the proper HTTP status code
+5) The most common responses for failed `POST` requests is `406 Not Acceptable`
+   (something was not acceptable on the request - i.e. some data is invalid)
+6) A failed `POST` MAY not carry the representation of the resource on its body
+
+Lance-REST enabled clients and server SHOULD use HTTP status code to convey proper status in
+addition to the conventions listed above.
+
+### Negotiating  methods between server and client
+
+Lance-REST expects HTTP status codes to be used according to traditional HTTP practices. If a certain
+method is not supported, both server and client should understand that the status code
+`501 Not Implemented` indicates that such a method is not available.
+
+Therefore, if a client tries to update a certaing resource by doing a `PUT` on the resource's `self`
+link and the server replies with `501 Not Implemented`, then the server does not support updates
+for that resource.
+
+### Documents for POST and PUT
+
+Lance-REST clients MAY remove or keep underscore attributes from documents payloads but servers
+MUST ignore.
+
+Therefore, when creating a contact, the following transaction would be expected:
+
+Body of a `POST` to `/contacts` (assuming that the root URL yielded this link as a possibility):
+
+```javascript
+{
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
+
+Response is a `201 Created` with the body:
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+  },
+  "_meta": {
+    "class": "Contact"
+  },
+  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+  "name": "Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
+
+The server would have ignored any underscore attribute if the client had sent them.
+
+A `PUT` flow is similar but clients MAY or MAY NOT keep underscore attributes from previous `GET`
+on the resource proper.
+
+Therefore, when updating a contact, the following transaction would be expected:
+
+Body of a `PUT` to `/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1` (assuming that the `self` link
+of this entity pointed to such URL):
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+  },
+  "_meta": {
+    "class": "Contact"
+  },
+  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+  "name": "Mr. Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
+
+Response is a `200 Ok` with the body:
+
+```javascript
+{
+  "_links": {
+    "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
+  },
+  "_meta": {
+    "class": "Contact"
+  },
+  "_id": "88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1",
+  "name": "Mr. Miles Davis",
+  "email": "miles.davis@gmail.com"
+}
+```
+
+The server ignored all underscore attributes but still proceeded with the change (`Mr. Miles Davis`).
 
 
  [1]: http://work.co/
