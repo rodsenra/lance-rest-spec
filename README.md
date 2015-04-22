@@ -249,9 +249,9 @@ with these methods on [Convention 5](#convention-5-_post_-put-and-delete-respons
 
 The templating used on the metadata response follow the standard below:
 
-1) `{parameter}`: represents a mandatory placeholder named `parameter`. Clients MUST replace this
+1. `{parameter}`: represents a mandatory placeholder named `parameter`. Clients MUST replace this
    placeholder when composing a full URL
-2) `{?parameter}`: represents an optional placeholder named `parameter`. Clients MAY replace this
+2. `{?parameter}`: represents an optional placeholder named `parameter`. Clients MAY replace this
    placeholder with a parameter, but, if the parameter is not available, the client MUST remove the
    placeholder altogether.
 
@@ -416,9 +416,9 @@ Lance-REST takes an opinionated approach to pagination. In order to expose the p
 to Lance-REST clients, the following nodes are *mandatory* if either `_links/prev` or `_links/next`
 are present:
 
-1) `currentPage`: the number of the page the document refers to (1-based - meaning 1st page is 1)
-2) `totalCount`: the total number of entries this collection has
-3) `pageCount`: the total number of pages this collection has
+1. `currentPage`: the number of the page the document refers to (1-based)
+2. `totalCount`: the total number of entries this collection has
+3. `pageCount`: the total number of pages this collection has
 
 The following example is a paged collection of contacts with a total of 6 contacts, this document
 shows page 1 of this collection and there are 3 pages in total:
@@ -718,18 +718,18 @@ Clients are also expected to have facilities for creating, updating and deleting
 
 The following logic is used by Lance-REST clients when updating a resource:
 
-1) The client must first `GET` the resource's instance and therefore discover its `self` link.
-2) A resource without a `self` link cannot be updated
-3) With the `self` link in hands, the client MAY then send the updated Lance-REST document back to the
+1. The client must first `GET` the resource's instance and therefore discover its `self` link.
+2. A resource without a `self` link cannot be updated
+3. With the `self` link in hands, the client MAY then send the updated Lance-REST document back to the
    `self` link using the `PUT` method
-4) If the transaction was successful, the server MUST respond with a `200` and the updated
+4. If the transaction was successful, the server MUST respond with a `200` and the updated
    representation of the resource in Lance-REST format
-5) If the transaction was not successful, the server MUST respond with the proper HTTP status code
-6) The three traditional and most common responses for failed `PUT` requests are `406 Not Acceptable`
+5. If the transaction was not successful, the server MUST respond with the proper HTTP status code
+6. The three traditional and most common responses for failed `PUT` requests are `406 Not Acceptable`
    (something was not acceptable on the request - i.e. some data is invalid), `409 Conflict` (there
    is a conflict on the server reguarding this resource - i.e. someone else updated it before) and
    `410 Gone` (the representation of this resource does not exist on the server anymore)
-7) The failed requests should also carry the latest representation of the resource on their bodies
+7. The failed requests should also carry the latest representation of the resource on their bodies
    in Lance-REST format
 
 Lance-REST enabled clients and server SHOULD use HTTP status code to convey proper status in
@@ -739,12 +739,12 @@ addition to the conventions listed above.
 
 The following logic is used by Lance-REST clients when deleting a resource:
 
-1) The client must first `GET` the resource's instance and therefore discover its `self` link.
-2) A resource without a `self` link cannot be deleted
-3) With the `self` link in hands, the client MAY then send a `DELETE` request to the  `self` link
-4) If the transaction was successful, the server MUST respond with a `200`
-5) If the transaction was not successful, the server MUST respond with the proper HTTP status code
-6) The two traditional and most common responses for failed `DELETE` requests are `409 Conflict` (there
+1. The client must first `GET` the resource's instance and therefore discover its `self` link.
+2. A resource without a `self` link cannot be deleted
+3. With the `self` link in hands, the client MAY then send a `DELETE` request to the  `self` link
+4. If the transaction was successful, the server MUST respond with a `200`
+5. If the transaction was not successful, the server MUST respond with the proper HTTP status code
+6. The two traditional and most common responses for failed `DELETE` requests are `409 Conflict` (there
    is a conflict on the server reguarding this resource - i.e. someone else updated it before) and
    `410 Gone` (the representation of this resource does not exist on the server anymore)
 
@@ -756,16 +756,16 @@ addition to the conventions listed above.
 Clients may try to `POST` on any of the available link offered by the Root URL API. However, it's
 recommended that only links related to collections support this method for clarity sake.
 
-1) The client must first be aware of the links available by the API metadata Root URL (i.e. a
+1. The client must first be aware of the links available by the API metadata Root URL (i.e. a
    `contacts` link that points to `/contacts`)
-2) The client MAY then send a completely new resource in Lance-REST document back to the
+2. The client MAY then send a completely new resource in Lance-REST document back to the
    `contacts` link using the `POST` method
-3) If the transaction was successful, the server MUST respond with a `201 Created` and the created
+3. If the transaction was successful, the server MUST respond with a `201 Created` and the created
    representation of the resource in Lance-REST format
-4) If the transaction was not successful, the server MUST respond with the proper HTTP status code
-5) The most common responses for failed `POST` requests is `406 Not Acceptable`
+4. If the transaction was not successful, the server MUST respond with the proper HTTP status code
+5. The most common responses for failed `POST` requests is `406 Not Acceptable`
    (something was not acceptable on the request - i.e. some data is invalid)
-6) A failed `POST` MAY not carry the representation of the resource on its body
+6. A failed `POST` MAY not carry the representation of the resource on its body
 
 Lance-REST enabled clients and server SHOULD use HTTP status code to convey proper status in
 addition to the conventions listed above.
