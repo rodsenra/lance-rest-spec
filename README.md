@@ -107,12 +107,11 @@ Lance-REST. Things to look for:
   },
   "_meta": {
     "class": "ContactCollection",
-    "collectionNode": "contactList",
     "totalCount": 6,
     "currentPage": 1,
     "pageCount": 3
   },
-  "contactList": [
+  "_collection": [
     {
       "_links": {
         "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
@@ -180,10 +179,9 @@ a collection of tags). Things to look for:
       "self": { "href": "/product/5abb57d4-e3c6-11e4-8a00-1681e6b88ec1/tags" }
     },
     "_meta": {
-      "class": "ProductTagCollection",
-      "collectionNode": "tagList"
+      "class": "ProductTagCollection"
     },
-    "tagList": [
+    "_collection": [
       {
         "_meta": {
           "class": "ProductTag",
@@ -356,10 +354,10 @@ a `Contact`:
 Within the design of your API, classes should be used to identify unique resource types. In practice,
 this means that each class name is unique.
 
-### The _meta/collectionNode node (mandatory for collections)
+### The _collection node (mandatory for collections)
 
 In Lance-REST, collections receive special treatement. A Lance-REST enabled collection has the
-same meta-descriptor wrappers as any other object. In addition, it also has a `_meta/collectionNode`
+same meta-descriptor wrappers as any other object. In addition, it also has a `_collection`
 entry that instructs clients to the location of the collection proper.
 
 Suppose you want to model a collection of contacts, you could go about doing the following:
@@ -370,10 +368,9 @@ Suppose you want to model a collection of contacts, you could go about doing the
     "self": { "href": "/contacts" }
   },
   "_meta": {
-    "class": "ContactCollection",
-    "collectionNode": "contactList"
+    "class": "ContactCollection"
   },
-  "contactList": [
+  "_collection": [
     {
       "_links": {
         "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
@@ -404,8 +401,7 @@ Some observations about this design:
 
 * Despite being optional, a `class` has been defined. This helps clients wrap this response in a
   model if they want to.
-* `collectionNode` points to node `contactList` and instructs clients to find the collection items
-  over there.
+* `_collection` instructs clients that this is a collection.
 * This collection is not paginated (there's no `next` or `prev` nodes within `_links` as well as no
   `currentPage`, `totalCount` and `pageCount` nodes in `_meta` - see below).
 
@@ -431,12 +427,11 @@ shows page 1 of this collection and there are 3 pages in total:
   },
   "_meta": {
     "class": "ContactCollection",
-    "collectionNode": "contactList",
     "totalCount": 6,
     "currentPage": 1,
     "pageCount": 3
   },
-  "contactList": [
+  "_collection": [
     {
       "_links": {
         "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
@@ -481,7 +476,6 @@ that some extra meta data about the collection per se (`ordersProcessed`, `order
   },
   "_meta": {
     "class": "OrderCollection",
-    "collectionNode": "orderList",
     "totalCount": 26,
     "currentPage": 1,
     "pageCount": 9,
@@ -489,7 +483,7 @@ that some extra meta data about the collection per se (`ordersProcessed`, `order
     "ordersUnderReview": 5,
     "ordersPending": 8
   },
-  "orderList": [
+  "_collection": [
     {
       "_links": {
         "self": { "href": "/order/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
@@ -580,10 +574,9 @@ the "fuller", more complete version of this entity:
   },
   "friends": {
     "meta": {
-      "class": "ContactCollection",
-      "collectionNode": "friendList"
+      "class": "ContactCollection"
     },
-    "friendList": [
+    "_collection": [
       {
         "_links": {
           "self": { "href": "/contact/fdb7a214-e3c4-11e4-8a00-1681e6b88ec1" }
@@ -640,12 +633,11 @@ The following example shows a possible representation of a paged collection of c
   },
   "_meta": {
     "class": "ContactCollection",
-    "collectionNode": "contactList",
     "totalCount": 6,
     "currentPage": 1,
     "pageCount": 3
   },
-  "contactList": [
+  "_collection": [
     {
       "_links": {
         "self": { "href": "/contact/88b4ddfe-e3c1-11e4-8a00-1681e6b88ec1" }
@@ -672,8 +664,8 @@ The following example shows a possible representation of a paged collection of c
 }
 ```
 
-Please note that there are some other conventions for collections (such as `collectionNode`,
-`totalCount`, `currentPage` and `pageCount`). These are explained in more details on
+Please note that there are some other conventions for collections (such as `_collection`,
+`meta.totalCount`, `meta.currentPage` and `meta.pageCount`). These are explained in more details on
 [Convention 3](#convention-3-_meta-node-optional). The `next` link on the above example points
 to `/contacts?page=2` where the second page for this collection (of 3 pages, as one can see)
 can be fetched.
